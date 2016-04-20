@@ -1,13 +1,19 @@
+import com.typesafe.config.ConfigFactory
 import demo.Config
 import demo.Tables
-import Tables._
-import Tables.profile.api._
+import slick.backend.DatabaseConfig
+import slick.driver.JdbcProfile
+
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Example extends App {
-  val db = Database.forURL(Config.url, driver=Config.jdbcDriver)
+  val fullConfig = ConfigFactory.load()
+  val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("database",fullConfig)
+  val db = databaseConfig.db
+
+
 
   // Using generated code. Our Build.sbt makes sure they are generated before compilation.
   // TableQuery names are lower case just as we customized them.
@@ -22,6 +28,6 @@ object Example extends App {
          .mkString("\n")
       ).map(println)
     },
-    20 seconds
+    20.seconds
   )
 }

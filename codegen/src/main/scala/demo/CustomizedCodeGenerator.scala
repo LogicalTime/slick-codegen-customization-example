@@ -16,14 +16,15 @@ import scala.concurrent.duration._
 object CustomizedCodeGenerator {
   def main(args: Array[String]) = {
     val cgs: SlickCodegenSettings = {
-      def inputConfigFilepath = args(0)
-      def config = ConfigFactory.parseFileAnySyntax(new File(inputConfigFilepath))
-      SlickCodegenSettings(config)
+      def inputfileConfig = ConfigFactory.parseFileAnySyntax(new File(args(0)))
+      def fullConfig = ConfigFactory.load().withFallback(inputfileConfig).resolve()
+
+      SlickCodegenSettings(fullConfig)
     }
 
     Await.ready(
-      codegen.map(_.writeToFile(
-       cgs.databaseConfig.driver.toString,
+      codegen(cgs).map(_.writeToFile(
+        cgs.databaseConfig.driver.toString,
         args(0),
         cgs.destPkg,
         cgs.destContainer,
@@ -33,46 +34,48 @@ object CustomizedCodeGenerator {
     )
   }
 
-  val db = H2Driver.api.Database.forURL(cgs.url, driver = jdbcDriver)
-  // filter out desired tables
-  val included = Seq("COFFEES", "SUPPLIERS", "COF_INVENTORY")
-  val codegen = db.run {
-    H2Driver.defaultTables.map(_.filter(t => included contains t.name.name)).flatMap(H2Driver.createModelBuilder(_, ignoreInvalidDefaults = false).buildModel)
-  }.map { model =>
-    new slick.codegen.SourceCodeGenerator(model) {
-      // customize Scala entity name (case class, etc.)
-      override def entityName = {
-        case "COFFEES"       => "Coffee"
-        case "SUPPLIERS"     => "Supplier"
-        case "COF_INVENTORY" => "CoffeeInventoryItem"
-        case dbTableName     => super.entityName(dbTableName)
-      }
-      // customize Scala table name (table class, table values, ...)
-      override def tableName = {
-        case "COF_INVENTORY" => "CoffeeInventory"
-        case dbTableName     => super.tableName(dbTableName)
-      }
-      // override generator responsible for tables
-      override def Table = new Table(_) {
-        table =>
-        // customize table value (TableQuery) name (uses tableName as a basis)
-        override def TableValue = new TableValue {
-          override def rawName = super.rawName.uncapitalize
+
+  def codegen(cgs: SlickCodegenSettings) = {
+    cgs.databaseConfig.db.run {
+      H2Driver.defaultTables.map(_.filter(t => cgs.tableNames.get contains t.name.name)).flatMap(H2Driver.createModelBuilder(_, ignoreInvalidDefaults = false).buildModel)
+    }.map { model =>
+      new slick.codegen.SourceCodeGenerator(model) {
+        // customize Scala entity name (case class, etc.)
+        override def entityName = {
+          case "COFFEES"       => "Coffee"
+          case "SUPPLIERS"     => "Supplier"
+          case "COF_INVENTORY" => "CoffeeInventoryItem"
+          case dbTableName     => super.entityName(dbTableName)
         }
-        // override generator responsible for columns
-        override def Column = new Column(_) {
-          // customize Scala column names
-          override def rawName = (table.model.name.table, this.model.name) match {
-            case ("COFFEES", "COF_NAME")       => "name"
-            case ("COFFEES", "SUP_ID")         => "supplierId"
-            case ("SUPPLIERS", "SUP_ID")       => "id"
-            case ("SUPPLIERS", "SUP_NAME")     => "name"
-            case ("COF_INVENTORY", "QUAN")     => "quantity"
-            case ("COF_INVENTORY", "COF_NAME") => "coffeeName"
-            case _                             => super.rawName
+        // customize Scala table name (table class, table values, ...)
+        override def tableName = {
+          case "COF_INVENTORY" => "CoffeeInventory"
+          case dbTableName     => super.tableName(dbTableName)
+        }
+        // override generator responsible for tables
+        override def Table = new Table(_) {
+          table =>
+          // customize table value (TableQuery) name (uses tableName as a basis)
+          override def TableValue = new TableValue {
+            override def rawName = super.rawName.uncapitalize
+          }
+          // override generator responsible for columns
+          override def Column = new Column(_) {
+            // customize Scala column names
+            override def rawName = (table.model.name.table, this.model.name) match {
+              case ("COFFEES", "COF_NAME")       => "name"
+              case ("COFFEES", "SUP_ID")         => "supplierId"
+              case ("SUPPLIERS", "SUP_ID")       => "id"
+              case ("SUPPLIERS", "SUP_NAME")     => "name"
+              case ("COF_INVENTORY", "QUAN")     => "quantity"
+              case ("COF_INVENTORY", "COF_NAME") => "coffeeName"
+              case _                             => super.rawName
+            }
           }
         }
       }
     }
   }
+
+
 }
