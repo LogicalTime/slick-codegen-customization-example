@@ -15,6 +15,7 @@ lazy val root = (project in file("."))
 lazy val codegen = project
     .settings(sharedSettings)
     .settings( libraryDependencies += "com.typesafe.slick" %% "slick-codegen" % "3.1.1" )
+    .settings( libraryDependencies += "com.typesafe" % "config" % "1.2.1" )
 
 
 // shared sbt config between main project and codegen project
