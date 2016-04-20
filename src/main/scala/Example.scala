@@ -1,5 +1,4 @@
 import com.typesafe.config.ConfigFactory
-import demo.Config
 import demo.Tables
 import slick.backend.DatabaseConfig
 import slick.driver.JdbcProfile

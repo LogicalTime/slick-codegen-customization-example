@@ -1,6 +1,7 @@
 package demo
 
 import java.io.File
+import java.net.URL
 
 import com.typesafe.config.ConfigFactory
 import slick.driver.H2Driver
@@ -16,11 +17,15 @@ import scala.concurrent.duration._
 object CustomizedCodeGenerator {
   def main(args: Array[String]) = {
     val cgs: SlickCodegenSettings = {
-      def inputfileConfig = ConfigFactory.parseFileAnySyntax(new File(args(0)))
+      def inputfileConfig = ConfigFactory.parseURL(new URL(args(0)))
       def fullConfig = ConfigFactory.load().withFallback(inputfileConfig).resolve()
 
       SlickCodegenSettings(fullConfig)
     }
+
+    println(cgs)
+    val makeDir = (new File(cgs.destDir)).mkdir()
+    println(s"makeDir=$makeDir")
 
     Await.ready(
       codegen(cgs).map(_.writeToFile(

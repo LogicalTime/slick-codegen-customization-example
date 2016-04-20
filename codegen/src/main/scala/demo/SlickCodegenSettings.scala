@@ -19,6 +19,8 @@ case class SlickCodegenSettings (
   destFilenameExtensionOpt: Option[String],
   databaseConfig: DatabaseConfig[JdbcProfile]
 ){
+
+
   val destContainer = destContainerOpt.getOrElse("Tables")
   val destFilename = destFilenameOpt.getOrElse(destContainer)
   val destFilenameExtension = destFilenameExtensionOpt match {
