@@ -1,5 +1,7 @@
 
 fork in run := true
+shellPrompt := { state =>
+  s"[${(Project extract state).currentRef.project}]> " }
 
 lazy val root = (project in file("."))
     .settings(sharedSettings)
@@ -16,7 +18,8 @@ lazy val codegen = project
 
 // shared sbt config between main project and codegen project
 lazy val sharedSettings = Seq(
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.11.8",
+  scalacOptions := Seq("-feature", "-unchecked", "-deprecation"),
   libraryDependencies ++= List(
     "com.typesafe.slick" %% "slick" % "3.1.1",
     "org.slf4j" % "slf4j-nop" % "1.7.10",
@@ -38,3 +41,6 @@ lazy val slickCodeGenTask = Def.task {
   Seq(file(fname))
 }
 
+
+
+fork in run := true
